@@ -1,94 +1,196 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
+const DEMO_USERS_KEY = "streamify_demo_users";
+const DEMO_SESSION_KEY = "streamify_demo_session";
 
 const SignUp = () => {
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: ''
-  });
-
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const initialEmail = useMemo(() => {
+    return localStorage.getItem("streamify_demo_email") || "";
+  }, []);
 
-  const handleSubmit = (e) => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState(initialEmail);
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    document.title = "Sign Up • Streamify";
+  }, []);
+
+  const handleSignUp = (e) => {
     e.preventDefault();
-    
-    // 1. Log the data (simulating a database save)
-    console.log("Account Created:", formData);
-    
-    // 2. Show the Success Alert
-    alert(`Welcome ${formData.fullName}! Your account has been created successfully.`);
-    
-    // 3. Navigate to the Sign In page after the user clicks "OK" on the alert
-    navigate('/signin'); 
+    setError("");
+
+    if (!name.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+    if (!email.trim()) {
+      setError("Please enter your email.");
+      return;
+    }
+    if (password.trim().length < 4) {
+      setError("Password must be at least 4 characters (demo).");
+      return;
+    }
+
+    // Demo create account (localStorage)
+    const raw = localStorage.getItem(DEMO_USERS_KEY);
+    const users = raw ? JSON.parse(raw) : [];
+
+    const exists = users.some(
+      (u) => String(u.email).toLowerCase() === email.trim().toLowerCase()
+    );
+    if (exists) {
+      setError("This email is already registered (demo). Please sign in.");
+      return;
+    }
+
+    const newUser = {
+      id: crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      name: name.trim(),
+      email: email.trim(),
+      createdAt: Date.now(),
+      mode: "demo",
+    };
+
+    const updated = [newUser, ...users];
+    localStorage.setItem(DEMO_USERS_KEY, JSON.stringify(updated));
+    localStorage.setItem("streamify_demo_email", email.trim());
+
+    // auto sign in (demo)
+    localStorage.setItem(
+      DEMO_SESSION_KEY,
+      JSON.stringify({
+        email: newUser.email,
+        createdAt: Date.now(),
+        mode: "demo",
+      })
+    );
+
+    navigate("/explore");
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-black">
-      {/* Background Overlay */}
-      <div 
-        className="absolute inset-0 bg-[url('https://dnm.nflximg.net/api/v6/BvVbc2Wxr2w6QuoANoSpJKEIWjQ/AAAAQavW2NsPoRMpRHtA9QrkRartIDbya5GDWj9uAjmtlkC7PSIMKoQ5QJ3k8SnlnKScjniyV7H0Owxjd7-CVxX3BCawy4K-8b0z_h8sEqbi4Rh1nMGhqVWa1RLbUXlW3SzGLnruqO1sjjiw5oeLqri7MtL3HDU.jpg?r=de5')] bg-cover bg-center opacity-50"
-        aria-hidden="true"
-      ></div>
-      
-      {/* Sign Up Box */}
-      <div className="relative z-10 w-full max-w-[450px] p-8 md:p-16 bg-black/80 rounded-md text-white">
-        <h2 className="text-3xl font-bold mb-7">Sign Up</h2>
-        
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input 
-            type="text" 
-            name="fullName"
-            placeholder="Full Name" 
-            value={formData.fullName}
-            onChange={handleChange}
-            required
-            className="w-full h-12 px-4 rounded bg-gray-800 border-none focus:ring-2 focus:ring-gray-500 outline-none text-white"
-          />
-          <input 
-            type="email" 
-            name="email"
-            placeholder="Email address" 
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full h-12 px-4 rounded bg-gray-800 border-none focus:ring-2 focus:ring-gray-500 outline-none text-white"
-          />
-          <input 
-            type="password" 
-            name="password"
-            placeholder="Add a password" 
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="w-full h-12 px-4 rounded bg-gray-800 border-none focus:ring-2 focus:ring-gray-500 outline-none text-white"
-          />
-          
-          <button 
-            type="submit" 
-            className="w-full h-12 mt-6 bg-red-600 rounded font-bold hover:bg-red-700 transition duration-200"
-          >
-            Get Started
-          </button>
-        </form>
+    <div className="relative min-h-screen w-full overflow-hidden bg-black">
+      {/* Background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-black/80 to-black" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,0,0,0.16),transparent_55%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(59,130,246,0.12),transparent_55%)]" />
+      </div>
 
-        <div className="mt-10 text-gray-500">
-          Already have an account? 
-          <Link to="/signin" className="text-white hover:underline ml-1 font-medium">
-            Sign in now.
-          </Link>
+      <div className="relative mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-14">
+        <div className="w-full max-w-md">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-7 shadow-2xl backdrop-blur sm:p-8">
+            <div className="mb-6">
+              <h1 className="text-3xl font-extrabold text-white">
+                Create account
+              </h1>
+              <p className="mt-2 text-sm text-white/65">
+                This creates a demo profile stored locally in your browser.
+              </p>
+            </div>
+
+            {error ? (
+              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                {error}
+              </div>
+            ) : null}
+
+            <form onSubmit={handleSignUp} className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-white/80">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white placeholder:text-white/35 outline-none focus:border-white/25"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-white/80">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white placeholder:text-white/35 outline-none focus:border-white/25"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-white/80">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPw ? "text" : "password"}
+                    className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 pr-12 text-white placeholder:text-white/35 outline-none focus:border-white/25"
+                    placeholder="Create a password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-white/70 hover:bg-white/10"
+                  >
+                    {showPw ? "Hide" : "Show"}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-white/45">
+                  Demo password. Not used anywhere outside this browser.
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-red-600 px-4 py-3 font-semibold text-white shadow-lg shadow-red-600/20 transition hover:bg-red-500 active:scale-[0.99]"
+              >
+                Create demo account
+              </button>
+
+              <div className="text-center text-sm text-white/65">
+                Already have one?{" "}
+                <Link
+                  to="/signin"
+                  className="font-semibold text-white hover:underline"
+                >
+                  Sign in
+                </Link>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/55">
+                <p className="font-semibold text-white/75">Important</p>
+                <p className="mt-1">
+                  This is a frontend-only demo. Do not enter real passwords or
+                  sensitive information.
+                </p>
+              </div>
+            </form>
+          </div>
+
+          <p className="mt-6 text-center text-xs text-white/45">
+            © {new Date().getFullYear()} Streamify • Demo UI
+          </p>
         </div>
       </div>
     </div>
-  ); 
+  );
 };
 
 export default SignUp;
